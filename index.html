@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tabungan Jalan - Blok G</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f9f9f9;
+      margin: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    h1, h2 {
+      color: #2c3e50;
+      text-align: center;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0 15px;
+      box-sizing: border-box;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+    @media (max-width: 600px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+      }
+      td {
+        text-align: right;
+        position: relative;
+        padding-left: 50%;
+      }
+      td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 10px;
+        text-align: left;
+        font-weight: bold;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Tabungan Jalan</h1>
+    <h2>Komplek Pesona Rancamulya Blok G</h2>
+
+    <input type="text" id="nama" placeholder="Nama Warga">
+    <input type="text" id="nomorRumah" placeholder="Nomor Rumah (contoh: 15)">
+    <input type="number" id="jumlah" placeholder="Jumlah Setoran (Rp)">
+
+    <label>Tanggal Setoran:</label>
+    <div style="display: flex; gap: 10px;">
+      <select id="tanggal"></select>
+      <select id="bulan"></select>
+      <select id="tahun"></select>
+    </div>
+
+    <button onclick="tambahData()">Tambah Setoran</button>
+    <button onclick="downloadPDF()">Download Rekap PDF</button>
+
+    <table id="rekap">
+      <thead>
+        <tr>
+          <th>Nama</th>
+          <th>No. Rumah</th>
+          <th>Total Tabungan</th>
+          <th>Tanggal Setor</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    const data = [];
+
+    function isiTanggal() {
+      const tgl = document.getElementById("tanggal");
+      const bln = document.getElementById("bulan");
+      const thn = document.getElementById("tahun");
+
+      for (let i = 1; i <= 31; i++) tgl.innerHTML += `<option value="${i}">${i}</option>`;
+      const bulanNama = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+      bulanNama.forEach((b, i) => bln.innerHTML += `<option value="${i+1}">${b}</option>`);
+      for (let y = 2020; y <= new Date().getFullYear(); y++) thn.innerHTML += `<option value="${y}">${y}</option>`;
+    }
+
+    function tambahData() {
+      const nama = document.getElementById("nama").value.trim();
+      const nomor = document.getElementById("nomorRumah").value.trim();
+      const jumlah = parseInt(document.getElementById("jumlah").value);
+      const tgl = `${document.getElementById("tanggal").value}-${document.getElementById("bulan").value}-${document.getElementById("tahun").value}`;
+
+      if (!nama || !nomor || !jumlah) return alert("Isi semua data dengan benar.");
+      const rumah = `Blok G-${nomor}`;
+
+      let warga = data.find(d => d.nama === nama && d.rumah === rumah);
+      if (!warga) {
+        warga = { nama, rumah, total: 0, tanggal: [] };
+        data.push(warga);
+      }
+      warga.total += jumlah;
+      warga.tanggal.push(tgl);
+      renderTabel();
+
+      document.getElementById("nama").value = "";
+      document.getElementById("nomorRumah").value = "";
+      document.getElementById("jumlah").value = "";
+    }
+
+    function renderTabel() {
+      const tbody = document.querySelector("#rekap tbody");
+      tbody.innerHTML = "";
+      data.forEach(w => {
+        const row = `<tr>
+          <td>${w.nama}</td>
+          <td>${w.rumah}</td>
+          <td>Rp ${w.total.toLocaleString()}</td>
+          <td>${w.tanggal.map(t => `<div>${t}</div>`).join("")}</td>
+        </tr>`;
+        tbody.innerHTML += row;
+      });
+    }
+
+    function downloadPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.setFontSize(12);
+      doc.text("Rekap Tabungan Pengecoran Jalan - Blok G", 14, 15);
+      const rows = data.map(w => [w.nama, w.rumah, `Rp ${w.total.toLocaleString()}`, w.tanggal.join(", ")]);
+      doc.autoTable({ head: [["Nama", "No. Rumah", "Total Tabungan", "Tanggal Setor"]], body: rows, startY: 20 });
+      doc.save("rekap_tabungan_blok_g.pdf");
+    }
+
+    isiTanggal();
+  </script>
+</body>
+</html>
